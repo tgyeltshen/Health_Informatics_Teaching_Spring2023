@@ -1,0 +1,127 @@
+---
+title: "Informatics Applied to Qualitative Data: Part-I (MPH Course: Health Informatics and Decision Making)" 
+author: "Zoie Shui-Yee Wong; Tshewang Gyeltshen"
+#date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+    number_sections: no
+    toc_depth: 3
+    df_print: paged
+    code_folding: hide
+editor_options:
+  chunk_output_type: console
+  theme: flatly
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results="asis",warning = FALSE, message = FALSE) 
+options(digits = 2)
+library(SnowballC)
+#install.packages("SnowballC")
+```
+
+
+# 1. Loading free text documents and creating text Corpus  
+We will use the `tm` package in R to create a text corpus and perform initial data preprocessing.  
+
+```{r}
+rm(list = ls())
+setwd("C:/Users/zoies/Desktop/StLuke_MicrosoftPC/Teaching/HI-2023/W8Handson")
+txt.csv <- read.csv("GPSAsummary_class.csv")
+#load tm package
+library(tm) 
+
+txt.csv$GPSA.summary <-  iconv(txt.csv$GPSA.summary, to ="utf-8")
+txt<-Corpus(VectorSource(as.vector(txt.csv$GPSA.summary)))        
+
+# Created a corpus, you may inspect the first 3 documents using the following code 
+inspect(txt[1:3])
+
+# or you wish to inspect a particular doc
+writeLines(as.character(txt[[20]]))
+
+```
+
+
+# 2. Preprocessing / Data preparation - Text transformation  
+Let use `getTransformations()` function to see all available text transformations currently available within `tm`
+
+```{r}
+getTransformations() 
+
+```
+
+
+##  2.1 tolower
+```{r}
+txt <- tm_map(txt, content_transformer(tolower))
+inspect(txt[1:3])
+```
+
+
+##  2.2 removeNumbers
+```{r}
+txt <- tm_map(txt, removeNumbers)
+inspect(txt[1:3])
+```
+
+##  2.3 removePuncuation
+```{r}
+txt <- tm_map(txt, removePunctuation)
+inspect(txt[1:3])
+```
+
+
+##  2.4 removeWords
+```{r}
+txt <- tm_map(txt, removeWords, stopwords("english"))
+inspect(txt[1:3])
+```
+
+
+##  2.5 stripWhitespace
+```{r}
+txt <- tm_map(txt, stripWhitespace) 
+inspect(txt[1:3])
+```
+
+##  2.6 stemDocument
+```{r}
+txt <- tm_map(txt, stemDocument, language = "english")
+inspect(txt[1:3])
+
+txtAll <- TermDocumentMatrix(txt)
+
+inspect(txtAll[1:8, 1:3]) 
+#display the first 8 terms, from the first 3 documents
+```
+
+# 3. Saving Structured Data
+```{r}
+txt.matrix <- as.matrix(txtAll) ## turn doc matrix to matrix
+txtdata<- data.frame(txt.matrix) ## turn matrix to data frame
+
+
+## Transpose dataframe - from column to row
+txtdata <- t(txtdata) 
+txtdata <- as.data.frame(txtdata)
+
+## indexing row
+rownames(txtdata) <- 1:nrow(txtdata)
+
+# add the LASA class into the dataframe
+txtdata$LASAcases<-txt.csv$LASAcases
+
+## write csv file
+write.csv(txtdata, "DatasetLASA.csv")
+```
+
+
